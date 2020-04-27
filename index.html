@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Map</title>
+    <!-- leaflet.css -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- leaflet1.5.1 -->
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
+    <!-- jquery3.4.1 -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <!-- turf@5 -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@5/turf.min.js"></script>
+    <!-- data from Google Spreadsheets-->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.5.1/tabletop.min.js'></script>
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet"  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.1/css/all.min.css" />
+    <!-- bootstrap 4.3.1 -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+<style>
+    body {
+      padding: 0;
+      margin: 0;
+      }
+
+    html, body, #map {
+      height: 100%;
+      width: 100%;
+/*      border: solid 1px black;*/
+    }
+
+    .leaflet-control-zoom-in {
+      color: black !important;
+    }
+
+    .leaflet-control-zoom-out {
+      color: black !important;
+    }
+
+    #selector_menu{
+      position: absolute;
+      top: 30px;
+      left: 100px;
+      z-index: 9000;
+    }
+    div.dataTables_scrollHead table.display {
+      background-color: #444;
+      color: #eee;
+    }
+    a.popup {
+        color: white;
+    }
+    a.popup:hover {
+        color: yellow !important;
+    }
+    a.btn-light{
+    color:#c0c0c0 !important;
+    }
+    h4 {
+        letter-spacing: 2px;
+    }
+</style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    
+    <table id="maptable" class="display"></table>
+
+    <script type="text/javascript">
+        
+        var map;
+        var code = "1z-QqT0g13h87JF41mS5kI7L_r_aoz1CzYw6twx3usa4";
+                    
+        var markerGroup = new L.featureGroup([]);
+
+        document.addEventListener('DOMContentLoaded',function(){
+                
+          map = L.map('map', {
+              zoomControl: true
+          }).setView([51.35149,10.45406], 6);
+            map.zoomControl.setPosition('bottomright');
+            
+//            var bounds = L.latLngBounds([[85, 180],[-85, -180]]);
+//            var wantedZoom = map.getBoundsZoom(bounds, true);
+//            var center = bounds.getCenter();
+//            map.setView(center, wantedZoom);
+            L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.{ext}', {
+                attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                subdomains: 'abcd',
+                minZoom: 2,
+                maxZoom: 22,
+                ext: 'png',
+                noWrap: true
+            }).addTo(map);
+            L.control.zoom({ position:'topright' });
+            
+          Tabletop.init({ 
+            key: code,
+            callback: function(sheet, tabletop){ 
+              for (var i in sheet){
+                var place = sheet[i];
+                 
+                  var popupContent = '<h4>' + place.Business_name + '</h4>' + '<br>' 
+                  + '<b>City</b>: '  + place.City  + '<br>' 
+                  + '<b>Address</b>: '  + place.Address_line_1  + '<br>' 
+                  + '<b>Postal code</b>: '  + place.Postal_code  + '<br>' 
+                  
+                  ;
+              
+                  var redIcon = new L.Icon({
+                      iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                      iconSize: [25, 41],
+                      iconAnchor: [12, 41],
+                      popupAnchor: [1, -34],
+                      shadowSize: [41, 41]
+                  });
+                  var blueIcon = new L.Icon({
+                      iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                      iconSize: [25, 41],
+                      iconAnchor: [12, 41],
+                      popupAnchor: [1, -34],
+                      shadowSize: [41, 41]
+                  });
+                  L.featureGroup([
+                      L.marker([place.LAT, place.LNG],{
+                          icon: redIcon
+                      })
+                  ]).addTo(markerGroup).bindPopup(popupContent, {
+//                   minWidth: 150,
+//                   maxWidth: 200,
+//                   maxHeight: 150
+                  }).addTo(map).on('mouseover', function(e){
+                      this.openPopup();
+                      e.layer.setIcon(blueIcon);
+                  }).on('popupclose', function (e) {
+                      e.layer.setIcon(redIcon);
+                  });   
+              }
+//                map.fitBounds(markerGroup.getBounds());
+            },
+              simpleSheet: true 
+          })
+        });
+    </script>
+  </body>
+</html>
